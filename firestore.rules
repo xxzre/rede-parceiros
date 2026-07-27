@@ -1,0 +1,81 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && 
+        (request.auth.token.admin == true || 
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin');
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // Coleção de Usuários e Técnicos
+    match /users/{userId} {
+      // Qualquer um autenticado pode ler seu próprio documento, Admin pode ler tudo
+      allow read: if isAuthenticated() && (isOwner(userId) || isAdmin());
+      
+      // Apenas Admin pode criar ou atualizar a role de admin.
+      // Técnico ativando conta só pode registrar a si mesmo se não alterar role para admin
+      allow create: if isAuthenticated() && (
+        isAdmin() || 
+        (isOwner(userId) && request.resource.data.role == 'tecnico')
+      );
+      
+      // Proteção de alteração de privilégios: Ninguém vira admin sozinho
+      allow update: if isAuthenticated() && (
+        isAdmin() || 
+        (isOwner(userId) && request.resource.data.role == resource.data.role)
+      );
+    }
+
+    // Coleção de Técnicos Cadastrados e Seus Códigos de Indicação (ex: JOAO01)
+    match /tecnicos/{tecnicoId} {
+      // Leitura pública dos nomes/códigos para validação de convite, ou autenticado
+      allow read: if true;
+      
+      // Somente ADMIN pode cadastrar novos técnicos e gerar códigos únicos
+      allow create, delete: if isAdmin();
+      
+      // Atualização: Admin pode tudo. O próprio técnico pode vincular seu UID 1 vez (não pode roubar código)
+      allow update: if isAdmin() || (
+        isAuthenticated() && 
+        resource.data.uid == null && 
+        request.resource.data.uid == request.auth.uid &&
+        request.resource.data.codigo == resource.data.codigo
+      );
+    }
+
+    // Coleção de Vendas e Indicações
+    match /vendas/{vendaId} {
+      // SEGURANÇA FORTE: Cada técnico só enxerga as PRÓPRIAS indicações no servidor!
+      // Admin visualiza todas as vendas.
+      allow read: if isAdmin() || (
+        isAuthenticated() && (
+          resource.data.tecnicoUid == request.auth.uid ||
+          resource.data.tecnicoCodigo == request.auth.token.codigo
+        )
+      );
+
+      // SEGURANÇA FORTE: Só o ADMIN pode registrar vendas.
+      // O técnico NÃO pode inventar ou criar vendas/indicações para si mesmo!
+      allow create, update, delete: if isAdmin();
+    }
+
+    // Coleção de Solicitações Públicas (Quero ser Parceiro / Entrar no Curso)
+    match /solicitacoes/{solicitacaoId} {
+      // Qualquer visitante pode enviar uma solicitação de inscrição
+      allow create: if true;
+      
+      // Apenas ADMIN pode visualizar, aprovar ou deletar solicitações
+      allow read, update, delete: if isAdmin();
+    }
+  }
+}
