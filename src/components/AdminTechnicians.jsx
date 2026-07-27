@@ -1,7 +1,21 @@
 import React, { useState } from 'react';
 import { storeService } from '../services/store';
 import { useAuth } from '../context/AuthContext';
-import { UserPlus, Copy, Check, Link, Percent, Phone, Mail, Award, Trash2 } from 'lucide-react';
+import { 
+  UserPlus, 
+  Copy, 
+  Check, 
+  Link, 
+  Percent, 
+  Phone, 
+  Mail, 
+  Award, 
+  Search, 
+  MessageSquare,
+  Calculator,
+  TrendingUp,
+  DollarSign
+} from 'lucide-react';
 
 export default function AdminTechnicians({ tecnicos, onUpdate }) {
   const { showToast, selecionarTecnicoParaDemonstracao } = useAuth();
@@ -11,6 +25,7 @@ export default function AdminTechnicians({ tecnicos, onUpdate }) {
   const [codigo, setCodigo] = useState('');
   const [comissaoPorcentagem, setComissaoPorcentagem] = useState(10);
   const [whatsapp, setWhatsapp] = useState('');
+  const [filtroBusca, setFiltroBusca] = useState('');
   
   const [copiedId, setCopiedId] = useState(null);
 
@@ -42,7 +57,6 @@ export default function AdminTechnicians({ tecnicos, onUpdate }) {
 
       showToast(`Técnico ${novo.nome} (${novo.codigo}) cadastrado com sucesso!`);
       
-      // Limpar formulário
       setNome('');
       setEmail('');
       setCodigo('');
@@ -62,11 +76,20 @@ export default function AdminTechnicians({ tecnicos, onUpdate }) {
     setTimeout(() => setCopiedId(null), 3000);
   };
 
+  // Vendas acumuladas para calcular estatísticas por técnico
+  const vendas = storeService.getVendas();
+
+  const tecnicosFiltrados = tecnicos.filter(t => 
+    t.nome.toLowerCase().includes(filtroBusca.toLowerCase()) ||
+    t.codigo.toLowerCase().includes(filtroBusca.toLowerCase()) ||
+    t.email.toLowerCase().includes(filtroBusca.toLowerCase())
+  );
+
   return (
     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px' }}>
       
       {/* Formulário de Cadastro */}
-      <div className="glass-panel" style={{ padding: '24px' }}>
+      <div className="glass-panel" style={{ padding: '24px', gridColumn: 'span 1' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px' }}>
           <div style={{ padding: '8px', background: 'rgba(99, 102, 241, 0.15)', borderRadius: '10px', color: 'var(--primary)' }}>
             <UserPlus size={20} />
@@ -79,7 +102,7 @@ export default function AdminTechnicians({ tecnicos, onUpdate }) {
 
         <form onSubmit={handleCadastrar}>
           <div className="form-group">
-            <label className="form-label">Nome Completo do Técnico *</label>
+            <label className="form-label">Nome Completo *</label>
             <input
               type="text"
               className="form-input"
@@ -123,7 +146,7 @@ export default function AdminTechnicians({ tecnicos, onUpdate }) {
           </div>
 
           <div className="form-group">
-            <label className="form-label">E-mail para Login/Notificação</label>
+            <label className="form-label">E-mail do Técnico</label>
             <input
               type="email"
               className="form-input"
@@ -134,7 +157,7 @@ export default function AdminTechnicians({ tecnicos, onUpdate }) {
           </div>
 
           <div className="form-group">
-            <label className="form-label">WhatsApp (para contato rápido)</label>
+            <label className="form-label">WhatsApp (com DDD)</label>
             <input
               type="text"
               className="form-input"
@@ -150,63 +173,111 @@ export default function AdminTechnicians({ tecnicos, onUpdate }) {
         </form>
       </div>
 
-      {/* Lista de Técnicos Cadastrados */}
-      <div className="glass-panel" style={{ padding: '24px', gridColumn: 'span 1' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
+      {/* Lista de Técnicos Cadastrados com Métricas Individuais */}
+      <div className="glass-panel" style={{ padding: '24px', gridColumn: 'span 2' }}>
+        
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
           <div>
             <h3 style={{ fontSize: '1.1rem', fontWeight: '700' }}>Técnicos da Rede ({tecnicos.length})</h3>
-            <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Copie o link de convite e envie ao técnico</p>
+            <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Gerencie permissões, links de convite e acompanhe resultados</p>
+          </div>
+
+          <div style={{ position: 'relative', minWidth: '220px' }}>
+            <input
+              type="text"
+              className="form-input"
+              placeholder="Buscar por nome ou código..."
+              value={filtroBusca}
+              onChange={(e) => setFiltroBusca(e.target.value)}
+              style={{ paddingLeft: '32px', fontSize: '0.85rem' }}
+            />
+            <Search size={14} style={{ position: 'absolute', left: '10px', top: '12px', color: 'var(--text-muted)' }} />
           </div>
         </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', maxHeight: '500px', overflowY: 'auto', paddingRight: '4px' }}>
-          {tecnicos.map((t) => (
-            <div
-              key={t.id}
-              style={{
-                background: 'rgba(15, 23, 42, 0.6)',
-                border: '1px solid var(--border-color)',
-                borderRadius: '12px',
-                padding: '16px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                gap: '12px',
-                flexWrap: 'wrap'
-              }}
-            >
-              <div style={{ flex: 1, minWidth: '180px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-                  <span style={{ fontWeight: '700', fontSize: '1rem', color: '#fff' }}>{t.nome}</span>
-                  <span className="badge badge-code">{t.codigo}</span>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', maxHeight: '520px', overflowY: 'auto', paddingRight: '4px' }}>
+          {tecnicosFiltrados.map((t) => {
+            const vendasTecnico = vendas.filter(v => v.tecnicoCodigo === t.codigo);
+            const totalFaturado = vendasTecnico.reduce((acc, v) => acc + v.valor, 0);
+            const totalComissao = vendasTecnico.reduce((acc, v) => acc + v.comissaoValor, 0);
+            const cleanWhatsapp = t.whatsapp ? t.whatsapp.replace(/[^0-9]/g, '') : '';
+
+            return (
+              <div
+                key={t.id}
+                style={{
+                  background: 'rgba(15, 23, 42, 0.7)',
+                  border: '1px solid var(--border-color)',
+                  borderRadius: '14px',
+                  padding: '18px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: '16px',
+                  flexWrap: 'wrap'
+                }}
+              >
+                <div style={{ flex: 1, minWidth: '220px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
+                    <span style={{ fontWeight: '800', fontSize: '1.05rem', color: '#fff' }}>{t.nome}</span>
+                    <span className="badge badge-code">{t.codigo}</span>
+                    <span className="badge" style={{ background: 'rgba(99, 102, 241, 0.15)', color: '#818cf8' }}>
+                      {t.comissaoPorcentagem}% comissão
+                    </span>
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '16px', fontSize: '0.8rem', color: 'var(--text-muted)', flexWrap: 'wrap' }}>
+                    {t.email && <span><Mail size={12} inline /> {t.email}</span>}
+                    {t.whatsapp && <span><Phone size={12} inline /> {t.whatsapp}</span>}
+                  </div>
+
+                  {/* Badges de estatísticas individuais */}
+                  <div style={{ display: 'flex', gap: '12px', marginTop: '10px', fontSize: '0.8rem' }}>
+                    <div style={{ background: 'rgba(255,255,255,0.03)', padding: '4px 10px', borderRadius: '6px' }}>
+                      Indicado: <strong style={{ color: '#10b981' }}>R$ {totalFaturado.toLocaleString('pt-BR')}</strong>
+                    </div>
+                    <div style={{ background: 'rgba(255,255,255,0.03)', padding: '4px 10px', borderRadius: '6px' }}>
+                      Comissão: <strong style={{ color: '#818cf8' }}>R$ {totalComissao.toLocaleString('pt-BR')}</strong>
+                    </div>
+                    <div style={{ background: 'rgba(255,255,255,0.03)', padding: '4px 10px', borderRadius: '6px' }}>
+                      Vendas: <strong style={{ color: '#fff' }}>{vendasTecnico.length}</strong>
+                    </div>
+                  </div>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                  <span><Percent size={12} inline /> {t.comissaoPorcentagem}% comissão</span>
-                  {t.whatsapp && <span><Phone size={12} inline /> {t.whatsapp}</span>}
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                  {cleanWhatsapp && (
+                    <a
+                      href={`https://wa.me/55${cleanWhatsapp}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="btn btn-secondary btn-sm"
+                      style={{ color: '#25D366' }}
+                      title="Enviar mensagem via WhatsApp"
+                    >
+                      <MessageSquare size={14} /> WhatsApp
+                    </a>
+                  )}
+
+                  <button
+                    onClick={() => copiarLinkConvite(t.codigo, t.id)}
+                    className="btn btn-secondary btn-sm"
+                  >
+                    {copiedId === t.id ? <Check size={14} color="#10b981" /> : <Link size={14} />}
+                    {copiedId === t.id ? 'Copiado!' : 'Copiar Convite'}
+                  </button>
+
+                  <button
+                    onClick={() => selecionarTecnicoParaDemonstracao(t.id)}
+                    className="btn btn-sm"
+                    style={{ background: 'rgba(99, 102, 241, 0.15)', color: '#818cf8', border: '1px solid rgba(99, 102, 241, 0.3)' }}
+                  >
+                    Painel
+                  </button>
                 </div>
               </div>
-
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <button
-                  onClick={() => copiarLinkConvite(t.codigo, t.id)}
-                  className="btn btn-secondary btn-sm"
-                  title="Copiar Link de Convite"
-                >
-                  {copiedId === t.id ? <Check size={14} color="#10b981" /> : <Link size={14} />}
-                  {copiedId === t.id ? 'Copiado!' : 'Copiar Link'}
-                </button>
-
-                <button
-                  onClick={() => selecionarTecnicoParaDemonstracao(t.id)}
-                  className="btn btn-sm"
-                  style={{ background: 'rgba(99, 102, 241, 0.15)', color: '#818cf8', border: '1px solid rgba(99, 102, 241, 0.3)' }}
-                  title="Simular visualização como este técnico"
-                >
-                  Ver Painel
-                </button>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 

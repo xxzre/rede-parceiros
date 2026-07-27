@@ -2,17 +2,19 @@ import React, { useState, useEffect } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { storeService, subscribeStore } from './services/store';
 import Navbar from './components/Navbar';
+import AdminOverview from './components/AdminOverview';
 import AdminTechnicians from './components/AdminTechnicians';
 import AdminSales from './components/AdminSales';
 import AdminRanking from './components/AdminRanking';
 import AdminRequests from './components/AdminRequests';
 import AdminRules from './components/AdminRules';
+import AdminSettings from './components/AdminSettings';
 import TechnicianDashboard from './components/TechnicianDashboard';
 import PublicForm from './components/PublicForm';
 import InviteActivation from './components/InviteActivation';
 import NotificationToast from './components/NotificationToast';
 
-import { UserCheck, ShoppingBag, Trophy, FileText, ShieldCheck, UserPlus, Sparkles } from 'lucide-react';
+import { LayoutDashboard, UserCheck, ShoppingBag, Trophy, FileText, ShieldCheck, Settings, UserPlus } from 'lucide-react';
 
 function AppContent() {
   const { role, setRole } = useAuth();
@@ -23,8 +25,8 @@ function AppContent() {
   const [solicitacoes, setSolicitacoes] = useState(() => storeService.getSolicitacoes());
   const [ranking, setRanking] = useState(() => storeService.getRanking());
 
-  // Aba ativa do Admin
-  const [adminTab, setAdminTab] = useState('vendas'); // 'vendas' | 'tecnicos' | 'ranking' | 'solicitacoes' | 'regras'
+  // Aba ativa do Admin (padrão: 'overview')
+  const [adminTab, setAdminTab] = useState('overview'); // 'overview' | 'vendas' | 'tecnicos' | 'ranking' | 'solicitacoes' | 'regras' | 'configuracoes'
   const [showPublicForm, setShowPublicForm] = useState(false);
   const [inviteCode, setInviteCode] = useState(null);
 
@@ -89,18 +91,26 @@ function AppContent() {
           <PublicForm onSuccess={() => setShowPublicForm(false)} />
         ) : role === 'admin' ? (
           
-          /* PAINEL DO ADMINISTRADOR */
+          /* PAINEL DO ADMINISTRADOR ELABORADO */
           <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
             
             {/* Navegação por Abas no Admin */}
             <div className="glass-panel" style={{ padding: '8px', display: 'flex', gap: '8px', overflowX: 'auto' }}>
               
               <button
+                onClick={() => setAdminTab('overview')}
+                className={`btn btn-sm ${adminTab === 'overview' ? 'btn-primary' : 'btn-secondary'}`}
+                style={{ border: 'none' }}
+              >
+                <LayoutDashboard size={16} /> Visão Geral
+              </button>
+
+              <button
                 onClick={() => setAdminTab('vendas')}
                 className={`btn btn-sm ${adminTab === 'vendas' ? 'btn-primary' : 'btn-secondary'}`}
                 style={{ border: 'none' }}
               >
-                <ShoppingBag size={16} /> Registrar Venda Indicada
+                <ShoppingBag size={16} /> Gestão de Vendas
               </button>
 
               <button
@@ -108,7 +118,7 @@ function AppContent() {
                 className={`btn btn-sm ${adminTab === 'tecnicos' ? 'btn-primary' : 'btn-secondary'}`}
                 style={{ border: 'none' }}
               >
-                <UserCheck size={16} /> Cadastrar Técnico ({tecnicos.length})
+                <UserCheck size={16} /> Técnicos ({tecnicos.length})
               </button>
 
               <button
@@ -116,7 +126,7 @@ function AppContent() {
                 className={`btn btn-sm ${adminTab === 'ranking' ? 'btn-primary' : 'btn-secondary'}`}
                 style={{ border: 'none' }}
               >
-                <Trophy size={16} /> Aba Ranking (Gamificação)
+                <Trophy size={16} /> Ranking Gamificado
               </button>
 
               <button
@@ -124,7 +134,7 @@ function AppContent() {
                 className={`btn btn-sm ${adminTab === 'solicitacoes' ? 'btn-primary' : 'btn-secondary'}`}
                 style={{ border: 'none', position: 'relative' }}
               >
-                <FileText size={16} /> Aba Solicitações
+                <FileText size={16} /> Solicitações
                 {solicitacoes.filter(s => s.status === 'pendente').length > 0 && (
                   <span style={{
                     width: '8px',
@@ -143,13 +153,24 @@ function AppContent() {
                 className={`btn btn-sm ${adminTab === 'regras' ? 'btn-primary' : 'btn-secondary'}`}
                 style={{ border: 'none' }}
               >
-                <ShieldCheck size={16} /> Regras Firestore (.rules)
+                <ShieldCheck size={16} /> Regras Firestore
+              </button>
+
+              <button
+                onClick={() => setAdminTab('configuracoes')}
+                className={`btn btn-sm ${adminTab === 'configuracoes' ? 'btn-primary' : 'btn-secondary'}`}
+                style={{ border: 'none' }}
+              >
+                <Settings size={16} /> Configurações
               </button>
 
             </div>
 
             {/* Conteúdo da Aba Ativa */}
             <div className="animate-fade">
+              {adminTab === 'overview' && (
+                <AdminOverview tecnicos={tecnicos} vendas={vendas} ranking={ranking} solicitacoes={solicitacoes} onNavigateTab={setAdminTab} />
+              )}
               {adminTab === 'vendas' && (
                 <AdminSales tecnicos={tecnicos} vendas={vendas} onUpdate={recarregarDados} />
               )}
@@ -164,6 +185,9 @@ function AppContent() {
               )}
               {adminTab === 'regras' && (
                 <AdminRules />
+              )}
+              {adminTab === 'configuracoes' && (
+                <AdminSettings />
               )}
             </div>
 
@@ -187,7 +211,7 @@ function AppContent() {
         fontSize: '0.8rem',
         marginTop: 'auto'
       }}>
-        Rede Parceiros © 2026 — Sistema de Gestão de Comissões, Indicações e Gamificação com Firestore Rules
+        Rede Parceiros © 2026 — Painel de Administração Executivo & Gestão de Afiliados
       </footer>
 
       {/* Componente de Toasts */}
